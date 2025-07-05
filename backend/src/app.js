@@ -11,13 +11,13 @@ app.use(cors());
 app.get('/', (req, res) => {
   res.send('¡Servidor backend funcionando!');
 });
-
+//http://localhost:3001/api/usuarios
 // Ruta de prueba para consultar usuarios
 app.get('/api/usuarios', async (req, res) => {
   let connection;
   try {
     connection = await getConnection();
-    const result = await connection.execute('SELECT * FROM "User"', [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+    const result = await connection.execute('SELECT * FROM TIPOCONTENIDO', [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
     res.json(result.rows);
   } catch (err) {
     console.error(err);
