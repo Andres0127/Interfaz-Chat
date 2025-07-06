@@ -85,12 +85,13 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Endpoint para obtener los amigos de un usuario con último mensaje, texto y remitente
+// Endpoint para obtener los amigos de un usuario
 app.get('/api/amigos/:consecuser', async (req, res) => {
   const { consecuser } = req.params;
   let connection;
   try {
     connection = await getConnection();
+<<<<<<< HEAD
     // Buscar amigos y el último mensaje con cada uno (fecha, texto y remitente)
     const result = await connection.execute(
       `SELECT * FROM (
@@ -166,6 +167,17 @@ app.get('/api/amigos/:consecuser', async (req, res) => {
         FROM AMIG_ a
         JOIN USUARIO u ON (u.CONSECUSER = a.CONSECUSER AND a.USU_CONSECUSER = :id)
       ) ORDER BY ULTIMO_MENSAJE DESC NULLS LAST`,
+=======
+    // Buscar amigos donde el usuario es CONSECUSER o USU_CONSECUSER
+    const result = await connection.execute(
+      `SELECT u.CONSECUSER, u.NOMBRE, u.APELLIDO, u."USER", u.EMAIL, u.CELULAR
+       FROM AMIG_ a
+       JOIN USUARIO u ON (u.CONSECUSER = a.USU_CONSECUSER AND a.CONSECUSER = :id)
+       UNION
+       SELECT u.CONSECUSER, u.NOMBRE, u.APELLIDO, u."USER", u.EMAIL, u.CELULAR
+       FROM AMIG_ a
+       JOIN USUARIO u ON (u.CONSECUSER = a.CONSECUSER AND a.USU_CONSECUSER = :id)`,
+>>>>>>> parent of 0cf9035 (V0.2.12)
       { id: consecuser },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
