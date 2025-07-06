@@ -8,6 +8,8 @@ const ChatWindow = ({ user, selectedChat, refreshTrigger }) => {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const prevChatRef = useRef();
+  const prevLengthRef = useRef();
 
   // Polling para refresco automático cada 2 segundos
   useEffect(() => {
@@ -38,6 +40,18 @@ const ChatWindow = ({ user, selectedChat, refreshTrigger }) => {
     handleScroll();
     return () => container.removeEventListener('scroll', handleScroll);
   }, [mensajes]);
+
+  // Scroll automático al último mensaje solo al cambiar de chat o al cargar más mensajes, no en cada actualización
+  useEffect(() => {
+    // Solo hacer scroll al cambiar de chat o al cargar más mensajes
+    if (selectedChat !== prevChatRef.current || mensajes.length > (prevLengthRef.current || 0)) {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+      }
+    }
+    prevChatRef.current = selectedChat;
+    prevLengthRef.current = mensajes.length;
+  }, [selectedChat, mensajes]);
 
   const handleVerMas = () => {
     setLimit(l => l + 10);

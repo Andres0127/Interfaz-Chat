@@ -18,9 +18,10 @@ const Chat = ({ user }) => {
     setRefreshChats(r => !r);
   };
 
-  // Función para refrescar los mensajes
+  // Función para refrescar los mensajes y la lista de chats
   const handleMessageSent = () => {
     setRefreshMessages(r => r + 1);
+    setRefreshChats(r => !r); // Refresca la lista de chats para mostrar el último mensaje
   };
 
   return (

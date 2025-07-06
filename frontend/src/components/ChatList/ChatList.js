@@ -5,10 +5,17 @@ import { getAmigos } from '../../services/api';
 const ChatList = ({ user, onSelectChat, selectedChat, refresh }) => {
   const [amigos, setAmigos] = useState([]);
 
+  // Polling para refrescar la lista de chats cada 2 segundos
   useEffect(() => {
-    if (user && user.CONSECUSER) {
-      getAmigos(user.CONSECUSER).then(setAmigos);
-    }
+    let interval;
+    const fetchAmigos = () => {
+      if (user && user.CONSECUSER) {
+        getAmigos(user.CONSECUSER).then(setAmigos);
+      }
+    };
+    fetchAmigos();
+    interval = setInterval(fetchAmigos, 2000);
+    return () => clearInterval(interval);
   }, [user, refresh]);
 
   return (
@@ -27,9 +34,35 @@ const ChatList = ({ user, onSelectChat, selectedChat, refresh }) => {
               <div className="chat-list-avatar">{chat.NOMBRE[0]}</div>
               <div className="chat-list-info">
                 <div className="chat-list-name">{chat.NOMBRE} {chat.APELLIDO}</div>
-                <div className="chat-list-last">&nbsp;</div>
+                <div className="chat-list-preview" style={{ color: '#bbb', fontSize: 13, marginTop: 2 }}>
+                  {chat.ULTIMO_TEXTO ? (
+                    <>
+                      <span style={{ color: '#888' }}>
+                        ~ {chat.ULTIMO_REMITENTE === user.CONSECUSER ? 'Tú' : (chat.NOMBRE + (chat.APELLIDO ? ' ' + chat.APELLIDO : ''))}:
+                      </span>
+                      <span style={{ color: '#bbb', marginLeft: 4 }}>{chat.ULTIMO_TEXTO}</span>
+                    </>
+                  ) : (
+                    <span style={{ color: '#bbb' }}>Sin mensajes</span>
+                  )}
+                </div>
               </div>
-              <div className="chat-list-time">&nbsp;</div>
+              <div className="chat-list-time">
+                {chat.ULTIMO_MENSAJE ? (
+                  <span style={{ color: '#888', fontSize: 12 }}>
+                    {(() => {
+                      const d = new Date(chat.ULTIMO_MENSAJE);
+                      const hoy = new Date();
+                      if (d.toDateString() === hoy.toDateString()) {
+                        // Formato hora WhatsApp
+                        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace('.', ':').toLowerCase();
+                      } else {
+                        return d.toLocaleDateString();
+                      }
+                    })()}
+                  </span>
+                ) : ''}
+              </div>
             </div>
           ))
         )}
