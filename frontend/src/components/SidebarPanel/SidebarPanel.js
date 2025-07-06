@@ -1,7 +1,7 @@
 import React from 'react';
 import './SidebarPanel.css';
 
-const SidebarPanel = ({ onAddFriend }) => {
+const SidebarPanel = ({ onAddFriend, onCreateGroup }) => {
   return (
     <div className="sidebar-panel">
       <button className="sidebar-btn" title="Agregar amigo" onClick={onAddFriend}>
@@ -13,6 +13,13 @@ const SidebarPanel = ({ onAddFriend }) => {
             <line x1="19" y1="6" x2="19" y2="8" stroke="#075e54" strokeWidth="1.5"/>
             <line x1="18" y1="7" x2="20" y2="7" stroke="#075e54" strokeWidth="1.5"/>
           </g>
+        </svg>
+      </button>
+      <button className="sidebar-btn" title="Crear grupo" onClick={onCreateGroup}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#075e54" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="7" cy="12" r="3"/>
+          <circle cx="17" cy="12" r="3"/>
+          <circle cx="12" cy="7" r="3"/>
         </svg>
       </button>
     </div>

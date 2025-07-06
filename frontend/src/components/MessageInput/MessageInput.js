@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import './MessageInput.css';
-import { sendMensaje } from '../../services/api';
+import { sendMensaje, sendMensajeGrupo } from '../../services/api';
 
 const MessageInput = ({ user, selectedChat, onMessageSent }) => {
   const inputRef = useRef();
@@ -9,11 +9,19 @@ const MessageInput = ({ user, selectedChat, onMessageSent }) => {
     e.preventDefault();
     const texto = inputRef.current.value.trim();
     if (!texto || !selectedChat) return;
-    await sendMensaje({
-      remitente: user.CONSECUSER,
-      destinatario: selectedChat.id,
-      texto
-    });
+    if (selectedChat.tipo === 'grupo') {
+      await sendMensajeGrupo({
+        remitente: user.CONSECUSER,
+        codgrupo: selectedChat.CODGRUPO,
+        texto
+      });
+    } else {
+      await sendMensaje({
+        remitente: user.CONSECUSER,
+        destinatario: selectedChat.id,
+        texto
+      });
+    }
     inputRef.current.value = '';
     if (onMessageSent) onMessageSent();
   };

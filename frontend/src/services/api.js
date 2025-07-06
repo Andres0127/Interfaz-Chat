@@ -86,3 +86,52 @@ export const getMensajes = async (user1, user2, limit = 10) => {
     return [];
   }
 };
+
+// Crear grupo
+export const crearGrupo = async ({ nombre, miembros, creador }) => {
+  try {
+    const response = await fetch('http://localhost:3001/api/grupos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, miembros, creador })
+    });
+    return await response.json();
+  } catch (error) {
+    return { success: false, error: 'Error de red' };
+  }
+};
+
+// Obtener todos los chats (amigos y grupos)
+export const getChats = async (consecuser) => {
+  try {
+    const response = await fetch(`http://localhost:3001/api/chats/${consecuser}`);
+    return await response.json();
+  } catch (error) {
+    return [];
+  }
+};
+
+// Enviar mensaje a grupo
+export const sendMensajeGrupo = async ({ remitente, codgrupo, texto }) => {
+  try {
+    const response = await fetch('http://localhost:3001/api/mensajes/grupo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ remitente, codgrupo, texto })
+    });
+    return await response.json();
+  } catch (error) {
+    return { success: false, error: 'Error de red' };
+  }
+};
+
+// Obtener mensajes de grupo
+export const getMensajesGrupo = async (codgrupo, limit = 10) => {
+  try {
+    const response = await fetch(`http://localhost:3001/api/mensajes/grupo/${codgrupo}?offset=${limit}`);
+    if (!response.ok) return [];
+    return await response.json();
+  } catch (error) {
+    return [];
+  }
+};

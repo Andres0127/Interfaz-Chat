@@ -380,6 +380,264 @@ app.get('/api/mensajes/:user1/:user2', async (req, res) => {
   }
 });
 
+// Crear grupo y asociar miembros
+app.post('/api/grupos', async (req, res) => {
+  const { nombre, miembros, creador } = req.body; // miembros: array de CONSECUSER, creador: CONSECUSER
+  let connection;
+  try {
+    connection = await getConnection();
+    // Obtener el siguiente CODGRUPO
+    const result = await connection.execute(
+      'SELECT NVL(MAX(CODGRUPO),0)+1 AS NEXTGRUPO FROM GRUPO',
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    const codGrupo = result.rows[0].NEXTGRUPO;
+    // Insertar grupo
+    await connection.execute(
+      'INSERT INTO GRUPO (CODGRUPO, CONSECUSER, NOMGRUPO, FECHAREGGRUPO) VALUES (:cod, :creador, :nombre, SYSDATE)',
+      { cod: codGrupo, creador, nombre },
+      { autoCommit: true }
+    );
+    // Insertar miembros (incluyendo al creador)
+    const miembrosUnicos = Array.from(new Set([...miembros, creador]));
+    for (const miembro of miembrosUnicos) {
+      await connection.execute(
+        'INSERT INTO PERTENECE (CONSECUSER, CODGRUPO) VALUES (:CONSECUSER, :CODGRUPO)',
+        { CONSECUSER: miembro, CODGRUPO: codGrupo },
+        { autoCommit: true }
+      );
+    }
+    res.json({ success: true, codGrupo });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Error al crear grupo' });
+  } finally {
+    if (connection) {
+      try { await connection.close(); } catch (err) { console.error('Error al cerrar la conexión:', err); }
+    }
+  }
+});
+
+// Endpoint para obtener todos los chats (amigos y grupos) de un usuario
+app.get('/api/chats/:consecuser', async (req, res) => {
+  const { consecuser } = req.params;
+  let connection;
+  try {
+    connection = await getConnection();
+    // Obtener amigos (chats individuales) con último mensaje
+    const amigosResult = await connection.execute(
+      `SELECT u.CONSECUSER, u.NOMBRE, u.APELLIDO, u."USER", NULL AS CODGRUPO, NULL AS NOMGRUPO, 'amigo' AS TIPO,
+        (
+          SELECT m.FECHAREGMEN FROM MENSAJE m
+          WHERE ((m.USU_CONSECUSER = :id AND m.CONSECUSER = u.CONSECUSER)
+              OR (m.USU_CONSECUSER = u.CONSECUSER AND m.CONSECUSER = :id))
+            AND m.FECHAREGMEN = (
+              SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2
+              WHERE ((m2.USU_CONSECUSER = :id AND m2.CONSECUSER = u.CONSECUSER)
+                 OR (m2.USU_CONSECUSER = u.CONSECUSER AND m2.CONSECUSER = :id))
+            )
+        ) AS ULTIMO_MENSAJE,
+        (
+          SELECT c.LOCALIZACONTENIDO FROM MENSAJE m
+          JOIN CONTENIDO c ON c.USU_CONSECUSER = m.USU_CONSECUSER AND c.CONSECUSER = m.CONSECUSER AND c.CONSMENSAJE = m.CONSMENSAJE
+          WHERE ((m.USU_CONSECUSER = :id AND m.CONSECUSER = u.CONSECUSER)
+              OR (m.USU_CONSECUSER = u.CONSECUSER AND m.CONSECUSER = :id))
+            AND m.FECHAREGMEN = (
+              SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2
+              WHERE ((m2.USU_CONSECUSER = :id AND m2.CONSECUSER = u.CONSECUSER)
+                 OR (m2.USU_CONSECUSER = u.CONSECUSER AND m2.CONSECUSER = :id))
+            )
+            AND c.IDTIPOCONTENIDO = '2'
+        ) AS ULTIMO_TEXTO,
+        (
+          SELECT m.USU_CONSECUSER FROM MENSAJE m
+          WHERE ((m.USU_CONSECUSER = :id AND m.CONSECUSER = u.CONSECUSER)
+              OR (m.USU_CONSECUSER = u.CONSECUSER AND m.CONSECUSER = :id))
+            AND m.FECHAREGMEN = (
+              SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2
+              WHERE ((m2.USU_CONSECUSER = :id AND m2.CONSECUSER = u.CONSECUSER)
+                 OR (m2.USU_CONSECUSER = u.CONSECUSER AND m2.CONSECUSER = :id))
+            )
+        ) AS ULTIMO_REMITENTE
+       FROM AMIG_ a
+       JOIN USUARIO u ON (u.CONSECUSER = a.USU_CONSECUSER AND a.CONSECUSER = :id)
+       UNION
+       SELECT u.CONSECUSER, u.NOMBRE, u.APELLIDO, u."USER", NULL AS CODGRUPO, NULL AS NOMGRUPO, 'amigo' AS TIPO,
+        (
+          SELECT m.FECHAREGMEN FROM MENSAJE m
+          WHERE ((m.USU_CONSECUSER = :id AND m.CONSECUSER = u.CONSECUSER)
+              OR (m.USU_CONSECUSER = u.CONSECUSER AND m.CONSECUSER = :id))
+            AND m.FECHAREGMEN = (
+              SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2
+              WHERE ((m2.USU_CONSECUSER = :id AND m2.CONSECUSER = u.CONSECUSER)
+                 OR (m2.USU_CONSECUSER = u.CONSECUSER AND m2.CONSECUSER = :id))
+            )
+        ) AS ULTIMO_MENSAJE,
+        (
+          SELECT c.LOCALIZACONTENIDO FROM MENSAJE m
+          JOIN CONTENIDO c ON c.USU_CONSECUSER = m.USU_CONSECUSER AND c.CONSECUSER = m.CONSECUSER AND c.CONSMENSAJE = m.CONSMENSAJE
+          WHERE ((m.USU_CONSECUSER = :id AND m.CONSECUSER = u.CONSECUSER)
+              OR (m.USU_CONSECUSER = u.CONSECUSER AND m.CONSECUSER = :id))
+            AND m.FECHAREGMEN = (
+              SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2
+              WHERE ((m2.USU_CONSECUSER = :id AND m2.CONSECUSER = u.CONSECUSER)
+                 OR (m2.USU_CONSECUSER = u.CONSECUSER AND m2.CONSECUSER = :id))
+            )
+            AND c.IDTIPOCONTENIDO = '2'
+        ) AS ULTIMO_TEXTO,
+        (
+          SELECT m.USU_CONSECUSER FROM MENSAJE m
+          WHERE ((m.USU_CONSECUSER = :id AND m.CONSECUSER = u.CONSECUSER)
+              OR (m.USU_CONSECUSER = u.CONSECUSER AND m.CONSECUSER = :id))
+            AND m.FECHAREGMEN = (
+              SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2
+              WHERE ((m2.USU_CONSECUSER = :id AND m2.CONSECUSER = u.CONSECUSER)
+                 OR (m2.USU_CONSECUSER = u.CONSECUSER AND m2.CONSECUSER = :id))
+            )
+        ) AS ULTIMO_REMITENTE
+       FROM AMIG_ a
+       JOIN USUARIO u ON (u.CONSECUSER = a.CONSECUSER AND a.USU_CONSECUSER = :id)
+      `,
+      { id: consecuser },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    // Obtener grupos (con último mensaje)
+    const gruposResult = await connection.execute(
+      `SELECT NULL AS CONSECUSER, NULL AS NOMBRE, NULL AS APELLIDO, NULL AS "USER", g.CODGRUPO, g.NOMGRUPO, 'grupo' AS TIPO,
+        (
+          SELECT m.FECHAREGMEN FROM MENSAJE m
+          WHERE m.CODGRUPO = g.CODGRUPO AND m.FECHAREGMEN = (
+            SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2 WHERE m2.CODGRUPO = g.CODGRUPO
+          )
+        ) AS ULTIMO_MENSAJE,
+        (
+          SELECT c.LOCALIZACONTENIDO FROM MENSAJE m
+          JOIN CONTENIDO c ON c.USU_CONSECUSER = m.USU_CONSECUSER AND c.CONSECUSER = m.CONSECUSER AND c.CONSMENSAJE = m.CONSMENSAJE
+          WHERE m.CODGRUPO = g.CODGRUPO AND m.FECHAREGMEN = (
+            SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2 WHERE m2.CODGRUPO = g.CODGRUPO
+          ) AND c.IDTIPOCONTENIDO = '2'
+        ) AS ULTIMO_TEXTO,
+        (
+          SELECT m.USU_CONSECUSER FROM MENSAJE m
+          WHERE m.CODGRUPO = g.CODGRUPO AND m.FECHAREGMEN = (
+            SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2 WHERE m2.CODGRUPO = g.CODGRUPO
+          )
+        ) AS ULTIMO_REMITENTE,
+        (
+          SELECT u.NOMBRE FROM MENSAJE m JOIN USUARIO u ON u.CONSECUSER = m.USU_CONSECUSER
+          WHERE m.CODGRUPO = g.CODGRUPO AND m.FECHAREGMEN = (
+            SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2 WHERE m2.CODGRUPO = g.CODGRUPO
+          )
+        ) AS ULTIMO_REMITENTE_NOMBRE,
+        (
+          SELECT u.APELLIDO FROM MENSAJE m JOIN USUARIO u ON u.CONSECUSER = m.USU_CONSECUSER
+          WHERE m.CODGRUPO = g.CODGRUPO AND m.FECHAREGMEN = (
+            SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2 WHERE m2.CODGRUPO = g.CODGRUPO
+          )
+        ) AS ULTIMO_REMITENTE_APELLIDO
+       FROM PERTENECE p
+       JOIN GRUPO g ON g.CODGRUPO = p.CODGRUPO
+       WHERE p.CONSECUSER = :id`,
+      { id: consecuser },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    // Unir y ordenar los resultados
+    const chats = [...amigosResult.rows, ...gruposResult.rows].sort((a, b) => {
+      if (!a.ULTIMO_MENSAJE && !b.ULTIMO_MENSAJE) return 0;
+      if (!a.ULTIMO_MENSAJE) return 1;
+      if (!b.ULTIMO_MENSAJE) return -1;
+      return new Date(b.ULTIMO_MENSAJE) - new Date(a.ULTIMO_MENSAJE);
+    });
+    res.json(chats);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Error al obtener chats' });
+  } finally {
+    if (connection) {
+      try { await connection.close(); } catch (err) { console.error('Error al cerrar la conexión:', err); }
+    }
+  }
+});
+
+// Enviar mensaje a un grupo
+app.post('/api/mensajes/grupo', async (req, res) => {
+  const { remitente, codgrupo, texto } = req.body;
+  let connection;
+  try {
+    connection = await getConnection();
+    // Obtener el siguiente CONSMENSAJE para el grupo
+    const result = await connection.execute(
+      `SELECT NVL(MAX(CONSMENSAJE),0)+1 AS NEXTMSG FROM MENSAJE WHERE CODGRUPO = :codgrupo`,
+      { codgrupo },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    const consMensaje = result.rows[0].NEXTMSG;
+    // Insertar el mensaje en MENSAJE (CONSECUSER = remitente)
+    await connection.execute(
+      `INSERT INTO MENSAJE (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, CODGRUPO, FECHAREGMEN) VALUES (:rem, :rem, :cons, :codgrupo, SYSDATE)`,
+      { rem: remitente, cons: consMensaje, codgrupo },
+      { autoCommit: true }
+    );
+    // Insertar el contenido del mensaje (CONSECUSER = remitente)
+    await connection.execute(
+      `INSERT INTO CONTENIDO (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, CONSECONTENIDO, IDTIPOARCHIVO, IDTIPOCONTENIDO, LOCALIZACONTENIDO) VALUES (:rem, :rem, :cons, 1, NULL, '2', :texto)`,
+      { rem: remitente, cons: consMensaje, texto },
+      { autoCommit: true }
+    );
+    res.json({ success: true, message: 'Mensaje enviado al grupo' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Error al enviar mensaje al grupo' });
+  } finally {
+    if (connection) {
+      try { await connection.close(); } catch (err) { console.error('Error al cerrar la conexión:', err); }
+    }
+  }
+});
+
+// Obtener mensajes de un grupo
+app.get('/api/mensajes/grupo/:codgrupo', async (req, res) => {
+  const { codgrupo } = req.params;
+  const { offset } = req.query;
+  let connection;
+  try {
+    connection = await getConnection();
+    let query =
+      `SELECT * FROM (
+         SELECT m.USU_CONSECUSER, m.CONSECUSER, m.CONSMENSAJE, m.FECHAREGMEN, c.LOCALIZACONTENIDO, c.IDTIPOCONTENIDO,
+                u.NOMBRE AS REMITENTE_NOMBRE, u.APELLIDO AS REMITENTE_APELLIDO,
+                ROW_NUMBER() OVER (ORDER BY m.FECHAREGMEN DESC) AS RN
+         FROM MENSAJE m
+         JOIN CONTENIDO c ON m.USU_CONSECUSER = c.USU_CONSECUSER AND m.CONSECUSER = c.CONSECUSER AND m.CONSMENSAJE = c.CONSMENSAJE
+         JOIN USUARIO u ON u.CONSECUSER = m.USU_CONSECUSER
+         WHERE m.CODGRUPO = :codgrupo AND c.IDTIPOCONTENIDO = '2'
+       ) WHERE RN BETWEEN :startRow AND :endRow
+       ORDER BY RN`;
+    let startRow = 1;
+    let endRow = 10;
+    if (offset) {
+      startRow = 1;
+      endRow = parseInt(offset, 10);
+    }
+    const result = await connection.execute(
+      query,
+      { codgrupo, startRow, endRow },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    // Ordenar de más antiguo a más reciente
+    const mensajes = result.rows.sort((a, b) => new Date(a.FECHAREGMEN) - new Date(b.FECHAREGMEN));
+    res.json(mensajes);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Error al obtener mensajes del grupo' });
+  } finally {
+    if (connection) {
+      try { await connection.close(); } catch (err) { console.error('Error al cerrar la conexión:', err); }
+    }
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);

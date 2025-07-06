@@ -1,0 +1,110 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 2.5rem 2rem 2rem 2rem;
+  border-radius: 18px;
+  min-width: 350px;
+  box-shadow: 0 4px 24px rgba(7,94,84,0.10);
+  border: 1.5px solid #e0e0e0;
+  font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+}
+
+.modal-content h2 {
+  color: #075e54;
+  font-size: 1.5rem;
+  margin-bottom: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.modal-content input[type="text"] {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-bottom: 1.2rem;
+  outline: none;
+  transition: border 0.2s;
+}
+
+.modal-content input[type="text"]:focus {
+  border: 1.5px solid #25d366;
+}
+
+.friends-list {
+  margin: 0.5rem 0 1.2rem 0;
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1.5px solid #e0e0e0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.friends-list p {
+  margin: 0 0 0.5rem 0;
+  color: #075e54;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.friends-list label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: #222;
+  cursor: pointer;
+}
+
+.friends-list input[type="checkbox"] {
+  accent-color: #25d366;
+  margin-right: 0.7rem;
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.modal-actions button {
+  padding: 0.55rem 1.4rem;
+  border: none;
+  border-radius: 8px;
+  background: #075e54;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.modal-actions button[type="button"] {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.modal-actions button:hover {
+  background: #128c7e;
+}
+
+.modal-actions button[type="button"]:hover {
+  background: #ccc;
+}
