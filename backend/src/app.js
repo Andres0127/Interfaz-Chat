@@ -509,7 +509,7 @@ app.get('/api/mensajes/:user1/:user2', async (req, res) => {
             FECHAREGMEN: citado.FECHAREGMEN
           };
         } else {
-          // Si no está en la lista, opcional: podrías hacer una consulta extra a la BD
+          
           msg.mensaje_citado = null;
         }
       }
