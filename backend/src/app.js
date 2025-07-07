@@ -560,12 +560,20 @@ app.get('/api/chats/:consecuser', async (req, res) => {
   }
 });
 
-// Enviar mensaje a un grupo
+// Enviar mensaje a un grupo (solo columnas relevantes, receiver/threading NULL)
 app.post('/api/mensajes/grupo', async (req, res) => {
   const { remitente, codgrupo, texto } = req.body;
   let connection;
   try {
     connection = await getConnection();
+    // Verificar que el remitente pertenece al grupo
+    const pertenece = await connection.execute(
+      `SELECT 1 FROM PERTENECE WHERE CONSECUSER = :rem AND CODGRUPO = :codgrupo`,
+      { rem: remitente, codgrupo }
+    );
+    if (pertenece.rows.length === 0) {
+      return res.status(403).json({ success: false, error: 'El usuario no pertenece al grupo' });
+    }
     // Obtener el siguiente CONSMENSAJE para el grupo
     const result = await connection.execute(
       `SELECT NVL(MAX(CONSMENSAJE),0)+1 AS NEXTMSG FROM MENSAJE WHERE CODGRUPO = :codgrupo`,
@@ -573,16 +581,50 @@ app.post('/api/mensajes/grupo', async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
     const consMensaje = result.rows[0].NEXTMSG;
-    // Insertar el mensaje en MENSAJE (CONSECUSER = remitente)
+    // Insertar el mensaje en MENSAJE (CONSECUSER = remitente, nunca NULL)
     await connection.execute(
-      `INSERT INTO MENSAJE (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, CODGRUPO, FECHAREGMEN) VALUES (:rem, :rem, :cons, :codgrupo, SYSDATE)`,
-      { rem: remitente, cons: consMensaje, codgrupo },
+      `INSERT INTO MENSAJE (
+        USU_CONSECUSER,
+        CONSECUSER,
+        CONSMENSAJE,
+        CODGRUPO,
+        MEN_USU_CONSECUSER,
+        MEN_CONSECUSER,
+        MEN_CONSMENSAJE,
+        FECHAREGMEN
+      ) VALUES (
+        :remitente,
+        :remitente,
+        :nextMsg,
+        :codgrupo,
+        NULL,
+        NULL,
+        NULL,
+        SYSDATE
+      )`,
+      { remitente, nextMsg: consMensaje, codgrupo },
       { autoCommit: true }
     );
-    // Insertar el contenido del mensaje (CONSECUSER = remitente)
+    // Insertar el contenido del mensaje (CONSECUSER = remitente, nunca NULL)
     await connection.execute(
-      `INSERT INTO CONTENIDO (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, CONSECONTENIDO, IDTIPOARCHIVO, IDTIPOCONTENIDO, LOCALIZACONTENIDO) VALUES (:rem, :rem, :cons, 1, NULL, '2', :texto)`,
-      { rem: remitente, cons: consMensaje, texto },
+      `INSERT INTO CONTENIDO (
+        USU_CONSECUSER,
+        CONSECUSER,
+        CONSMENSAJE,
+        CONSECONTENIDO,
+        IDTIPOARCHIVO,
+        IDTIPOCONTENIDO,
+        LOCALIZACONTENIDO
+      ) VALUES (
+        :remitente,
+        :remitente,
+        :nextMsg,
+        1,
+        NULL,
+        '2',
+        :texto
+      )`,
+      { remitente, nextMsg: consMensaje, texto },
       { autoCommit: true }
     );
     res.json({ success: true, message: 'Mensaje enviado al grupo' });
@@ -596,41 +638,55 @@ app.post('/api/mensajes/grupo', async (req, res) => {
   }
 });
 
-// Obtener mensajes de un grupo
+// Obtener mensajes de un grupo (JOIN correcto, orden cronológico, paginación)
 app.get('/api/mensajes/grupo/:codgrupo', async (req, res) => {
   const { codgrupo } = req.params;
-  const { offset } = req.query;
+  let user = req.user && req.user.consecuser ? req.user.consecuser : req.query.user;
+  if (!user) {
+    return res.status(400).json({ error: 'Usuario no especificado' });
+  }
+  let offset = 0;
+  let limit = 50;
+  if (!isNaN(Number(req.query.offset))) offset = Number(req.query.offset);
+  if (!isNaN(Number(req.query.limit))) limit = Number(req.query.limit);
   let connection;
   try {
     connection = await getConnection();
-    let query =
-      `SELECT * FROM (
-         SELECT m.USU_CONSECUSER, m.CONSECUSER, m.CONSMENSAJE, m.FECHAREGMEN, c.LOCALIZACONTENIDO, c.IDTIPOCONTENIDO,
-                u.NOMBRE AS REMITENTE_NOMBRE, u.APELLIDO AS REMITENTE_APELLIDO,
-                ROW_NUMBER() OVER (ORDER BY m.FECHAREGMEN DESC) AS RN
-         FROM MENSAJE m
-         JOIN CONTENIDO c ON m.USU_CONSECUSER = c.USU_CONSECUSER AND m.CONSECUSER = c.CONSECUSER AND m.CONSMENSAJE = c.CONSMENSAJE
-         JOIN USUARIO u ON u.CONSECUSER = m.USU_CONSECUSER
-         WHERE m.CODGRUPO = :codgrupo AND c.IDTIPOCONTENIDO = '2'
-       ) WHERE RN BETWEEN :startRow AND :endRow
-       ORDER BY RN`;
-    let startRow = 1;
-    let endRow = 10;
-    if (offset) {
-      startRow = 1;
-      endRow = parseInt(offset, 10);
+    // Validar pertenencia
+    const pertenece = await connection.execute(
+      `SELECT 1 FROM PERTENECE WHERE CONSECUSER = :user AND CODGRUPO = :codgrupo`,
+      { user, codgrupo }
+    );
+    if (pertenece.rows.length === 0) {
+      return res.status(403).json({ error: 'No pertenece al grupo' });
     }
+    // Consulta con JOIN correcto (CONSECUSER = USU_CONSECUSER)
     const result = await connection.execute(
-      query,
-      { codgrupo, startRow, endRow },
+      `SELECT
+         m.USU_CONSECUSER,
+         c.LOCALIZACONTENIDO AS texto,
+         m.FECHAREGMEN AS fecha,
+         u.NOMBRE AS remitente_nombre,
+         u.APELLIDO AS remitente_apellido
+       FROM MENSAJE m
+       JOIN CONTENIDO c
+         ON c.USU_CONSECUSER = m.USU_CONSECUSER
+        AND c.CONSECUSER     = m.CONSECUSER
+        AND c.CONSMENSAJE    = m.CONSMENSAJE
+       JOIN USUARIO u
+         ON u.CONSECUSER     = m.USU_CONSECUSER
+       WHERE m.CODGRUPO       = :codgrupo
+         AND c.IDTIPOCONTENIDO = '2'
+       ORDER BY m.FECHAREGMEN ASC
+       OFFSET :offset ROWS
+       FETCH NEXT :limit ROWS ONLY`,
+      { codgrupo, offset, limit },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-    // Ordenar de más antiguo a más reciente
-    const mensajes = result.rows.sort((a, b) => new Date(a.FECHAREGMEN) - new Date(b.FECHAREGMEN));
-    res.json(mensajes);
+    res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: 'Error al obtener mensajes del grupo' });
+    res.status(500).json({ error: 'Error al obtener mensajes del grupo' });
   } finally {
     if (connection) {
       try { await connection.close(); } catch (err) { console.error('Error al cerrar la conexión:', err); }

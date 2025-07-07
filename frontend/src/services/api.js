@@ -125,10 +125,13 @@ export const sendMensajeGrupo = async ({ remitente, codgrupo, texto }) => {
   }
 };
 
-// Obtener mensajes de grupo
-export const getMensajesGrupo = async (codgrupo, limit = 10) => {
+// Obtener mensajes de grupo (adaptado a la nueva API: offset y limit, y nuevos campos)
+export const getMensajesGrupo = async (codgrupo, limit = 10, offset = 0, user) => {
   try {
-    const response = await fetch(`http://localhost:3001/api/mensajes/grupo/${codgrupo}?offset=${limit}`);
+    // Incluye el usuario autenticado como query param si es necesario para validación
+    let url = `http://localhost:3001/api/mensajes/grupo/${codgrupo}?offset=${offset}&limit=${limit}`;
+    if (user) url += `&user=${user}`;
+    const response = await fetch(url);
     if (!response.ok) return [];
     return await response.json();
   } catch (error) {
