@@ -63,12 +63,12 @@ export const addAmigo = async (consecuser, amigoUser) => {
 };
 
 // Enviar mensaje entre usuarios
-export const sendMensaje = async ({ remitente, destinatario, texto }) => {
+export const sendMensaje = async ({ remitente, destinatario, texto, men_usu_consecuser, men_consecuser, men_consMensaje }) => {
   try {
     const response = await fetch('http://localhost:3001/api/mensajes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ remitente, destinatario, texto })
+      body: JSON.stringify({ remitente, destinatario, texto, men_usu_consecuser, men_consecuser, men_consMensaje })
     });
     return await response.json();
   } catch (error) {
@@ -84,5 +84,22 @@ export const getMensajes = async (user1, user2, limit = 10) => {
     return await response.json();
   } catch (error) {
     return [];
+  }
+};
+
+// Enviar archivo entre usuarios
+export const sendArchivo = async ({ remitente, destinatario, archivo }) => {
+  const formData = new FormData();
+  formData.append('remitente', remitente);
+  formData.append('destinatario', destinatario);
+  formData.append('archivo', archivo);
+  try {
+    const response = await fetch('http://localhost:3001/api/mensajes/archivo', {
+      method: 'POST',
+      body: formData
+    });
+    return await response.json();
+  } catch (error) {
+    return { success: false, error: 'Error de red' };
   }
 };

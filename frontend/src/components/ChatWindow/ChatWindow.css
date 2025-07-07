@@ -130,3 +130,37 @@
   height: 20px;
   display: block;
 }
+
+.chat-message-quote {
+  border-left: 4px solid #25d366;
+  background: #f0f0f0;
+  border-radius: 7px;
+  padding: 6px 12px 6px 10px;
+  margin-bottom: 6px;
+  font-size: 0.95em;
+  color: #222;
+  position: relative;
+  opacity: 0.95;
+  max-width: 95%;
+  word-break: break-word;
+}
+
+.chat-message.sent .chat-message-quote {
+  border-left: 4px solid #34b7f1;
+  background: #e6f7ff;
+}
+
+.chat-message-quote-user {
+  font-weight: bold;
+  color: #128c7e;
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.97em;
+}
+
+.chat-message-quote-text {
+  color: #555;
+  font-size: 0.97em;
+  display: block;
+  white-space: pre-line;
+}

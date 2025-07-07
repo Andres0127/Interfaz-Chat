@@ -50,3 +50,48 @@
   background: #bdbdbd;
   cursor: not-allowed;
 }
+
+.message-input-reply {
+  display: flex;
+  align-items: center;
+  background: #e6f7ff;
+  border-left: 4px solid #25d366;
+  border-radius: 7px;
+  padding: 6px 12px 6px 10px;
+  margin-bottom: 7px;
+  font-size: 0.97em;
+  color: #222;
+  position: relative;
+  max-width: 95%;
+  word-break: break-word;
+}
+
+.message-input-reply-label {
+  font-weight: bold;
+  color: #128c7e;
+  margin-right: 7px;
+}
+
+.message-input-reply-text {
+  color: #555;
+  font-size: 0.97em;
+  flex: 1;
+  white-space: pre-line;
+}
+
+.message-input-reply-cancel {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1.2em;
+  margin-left: 8px;
+  cursor: pointer;
+  padding: 0 4px;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+
+.message-input-reply-cancel:hover {
+  background: #e0e0e0;
+  color: #d32f2f;
+}

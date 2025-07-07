@@ -3,11 +3,26 @@ const cors = require('cors');
 const { getConnection } = require('./config/db');
 const oracledb = require('oracledb');
 const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+const path = require('path');
 
 const app = express();
 
 app.use(express.json());
 app.use(cors());
+
+// Configuración de multer para guardar archivos en /uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../uploads'));
+  },
+  filename: function (req, file, cb) {
+    // Nombre único: fecha + original
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage });
 
 app.get('/', (req, res) => {
   res.send('¡Servidor backend funcionando!');
@@ -40,6 +55,17 @@ app.get('/api/usuarios', async (req, res) => {
   }
 });
 
+// ===================== USUARIO =====================
+// Registro de usuario:
+// Inserta un nuevo usuario en la tabla USUARIO con todos sus datos personales y la fecha de registro.
+// CONSECUSER: identificador único (UUID)
+// NOMBRE, APELLIDO, "USER", PASSWORD, EMAIL, CELULAR: datos personales
+// FECHAREGISTRO: fecha y hora de registro (SYSDATE)
+// ---------------------------------------------------
+// Consulta:
+// INSERT INTO USUARIO (CONSECUSER, NOMBRE, APELLIDO, "USER", PASSWORD, EMAIL, CELULAR, FECHAREGISTRO)
+// VALUES (:id, :nombre, :apellido, :username, :password, :email, :celular, SYSDATE)
+// ---------------------------------------------------
 // Endpoint para registro de usuario (sin codubica)
 app.post('/api/register', async (req, res) => {
   const { user, password, nombre, apellido, email, celular } = req.body;
@@ -73,6 +99,12 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+// ===================== LOGIN =====================
+// Consulta para autenticar usuario:
+// Busca un usuario por nombre de usuario y contraseña para autenticar el acceso.
+// Consulta:
+// SELECT * FROM USUARIO WHERE "USER" = :username AND PASSWORD = :password
+// ---------------------------------------------------
 // Endpoint para login de usuario
 app.post('/api/login', async (req, res) => {
   const { user, password } = req.body;
@@ -106,6 +138,19 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// ===================== AMIGOS =====================
+// 1. Verificar existencia de usuario y amigo:
+//    SELECT 1 FROM USUARIO WHERE CONSECUSER = :id
+//    SELECT 1 FROM USUARIO WHERE "USER" = :amigoUser
+// 2. Obtener el ID del amigo:
+//    SELECT CONSECUSER FROM USUARIO WHERE "USER" = :amigoUser
+// 3. Verificar si ya son amigos:
+//    SELECT 1 FROM AMIG_ WHERE (CONSECUSER = :a AND USU_CONSECUSER = :b) OR (CONSECUSER = :b AND USU_CONSECUSER = :a)
+// 4. Insertar relación de amistad:
+//    INSERT INTO AMIG_ (CONSECUSER, USU_CONSECUSER) VALUES (:a, :b)
+// Explicación:
+// Se valida que ambos usuarios existan y que no sean ya amigos. Se inserta la relación en la tabla AMIG_, que almacena pares de usuarios que son amigos.
+// ---------------------------------------------------
 // Endpoint para obtener los amigos de un usuario con último mensaje, texto y remitente
 app.get('/api/amigos/:consecuser', async (req, res) => {
   const { consecuser } = req.params;
@@ -176,11 +221,11 @@ app.get('/api/amigos/:consecuser', async (req, res) => {
           (
             SELECT m.USU_CONSECUSER FROM MENSAJE m
             WHERE ((m.USU_CONSECUSER = :id AND m.CONSECUSER = u.CONSECUSER)
-                OR (m.USU_CONSECUSER = u.CONSECUSER AND m.CONSECUSER = :id))
+                OR (m.USU_CONSECUSER = u.CONSECUSER && m.CONSECUSER = :id))
               AND m.FECHAREGMEN = (
                 SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2
                 WHERE ((m2.USU_CONSECUSER = :id AND m2.CONSECUSER = u.CONSECUSER)
-                   OR (m2.USU_CONSECUSER = u.CONSECUSER AND m2.CONSECUSER = :id))
+                   OR (m2.USU_CONSECUSER = u.CONSECUSER && m2.CONSECUSER = :id))
               )
           ) AS ULTIMO_REMITENTE
         FROM AMIG_ a
@@ -269,44 +314,44 @@ app.post('/api/amigos', async (req, res) => {
   }
 });
 
+// ===================== MENSAJES (Texto y Citas) =====================
+// 1. Obtener el siguiente número de mensaje:
+//    SELECT NVL(MAX(CONSMENSAJE),0)+1 AS NEXTMSG FROM MENSAJE WHERE USU_CONSECUSER = :rem AND CONSECUSER = :dest
+//    - Genera un número de mensaje consecutivo para la conversación.
+// 2. Insertar el mensaje (metadatos):
+//    INSERT INTO MENSAJE (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, FECHAREGMEN, MEN_USU_CONSECUSER, MEN_CONSECUSER, MEN_CONSMENSAJE)
+//    VALUES (:rem, :dest, :cons, SYSDATE, :men_usu_consecuser, :men_consecuser, :men_consMensaje)
+//    - Inserta el mensaje y, si es respuesta a otro, guarda la referencia al mensaje citado (hilo).
+// 3. Insertar el contenido del mensaje:
+//    INSERT INTO CONTENIDO (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, CONSECONTENIDO, IDTIPOARCHIVO, IDTIPOCONTENIDO, LOCALIZACONTENIDO)
+//    VALUES (:rem, :dest, :cons, 1, NULL, '2', :texto)
+//    - IDTIPOCONTENIDO = '2' indica que es texto.
+// ---------------------------------------------------
 // Endpoint para enviar mensaje entre usuarios
 app.post('/api/mensajes', async (req, res) => {
-  const { remitente, destinatario, texto } = req.body;
+  const { remitente, destinatario, texto, men_usu_consecuser, men_consecuser, men_consMensaje } = req.body;
   let connection;
   try {
     connection = await getConnection();
-    // Obtener el siguiente CONSMENSAJE para el remitente y destinatario
-    // Consulta: Obtener el siguiente número de mensaje (CONSMENSAJE) para el remitente y destinatario
-    // Estructura:
-    //   SELECT NVL(MAX(CONSMENSAJE),0)+1 AS NEXTMSG FROM MENSAJE WHERE USU_CONSECUSER = :rem AND CONSECUSER = :dest
-    // - NVL(MAX(CONSMENSAJE),0)+1: busca el máximo número de mensaje previo y suma 1, o inicia en 1 si no hay mensajes.
-    // - WHERE USU_CONSECUSER = :rem AND CONSECUSER = :dest: filtra solo los mensajes enviados por el remitente a ese destinatario.
-    // Propósito: Generar el número de mensaje consecutivo para la relación remitente-destinatario.
     const result = await connection.execute(
       `SELECT NVL(MAX(CONSMENSAJE),0)+1 AS NEXTMSG FROM MENSAJE WHERE USU_CONSECUSER = :rem AND CONSECUSER = :dest`,
       { rem: remitente, dest: destinatario },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
     const consMensaje = result.rows[0].NEXTMSG;
-    // Insertar el mensaje
-    // Consulta: Insertar el mensaje en la tabla MENSAJE (solo metadatos, no el texto)
-    // Estructura:
-    //   INSERT INTO MENSAJE (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, FECHAREGMEN) VALUES (:rem, :dest, :cons, SYSDATE)
-    // - Inserta una fila con el remitente, destinatario, número de mensaje y fecha/hora de envío.
-    // Propósito: Registrar el envío de un mensaje entre dos usuarios.
+    // Insertar el mensaje, incluyendo los campos de referencia si existen
     await connection.execute(
-      `INSERT INTO MENSAJE (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, FECHAREGMEN) VALUES (:rem, :dest, :cons, SYSDATE)`,
-      { rem: remitente, dest: destinatario, cons: consMensaje },
+      `INSERT INTO MENSAJE (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, FECHAREGMEN, MEN_USU_CONSECUSER, MEN_CONSECUSER, MEN_CONSMENSAJE) VALUES (:rem, :dest, :cons, SYSDATE, :men_usu_consecuser, :men_consecuser, :men_consMensaje)`,
+      {
+        rem: remitente,
+        dest: destinatario,
+        cons: consMensaje,
+        men_usu_consecuser: men_usu_consecuser || null,
+        men_consecuser: men_consecuser || null,
+        men_consMensaje: men_consMensaje || null
+      },
       { autoCommit: true }
     );
-    // Insertar el contenido del mensaje (texto)
-    // Consulta: Insertar el contenido del mensaje (texto) en la tabla CONTENIDO
-    // Estructura:
-    //   INSERT INTO CONTENIDO (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, CONSECONTENIDO, IDTIPOARCHIVO, IDTIPOCONTENIDO, LOCALIZACONTENIDO)
-    //   VALUES (:rem, :dest, :cons, 1, NULL, '2', :texto)
-    // - Inserta el texto del mensaje asociado al mensaje recién creado.
-    // - IDTIPOCONTENIDO = '2' indica que es texto, IDTIPOARCHIVO = NULL porque no es archivo.
-    // Propósito: Guardar el contenido textual del mensaje.
     await connection.execute(
       `INSERT INTO CONTENIDO (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, CONSECONTENIDO, IDTIPOARCHIVO, IDTIPOCONTENIDO, LOCALIZACONTENIDO) VALUES (:rem, :dest, :cons, 1, NULL, '2', :texto)`,
       { rem: remitente, dest: destinatario, cons: consMensaje, texto },
@@ -323,7 +368,86 @@ app.post('/api/mensajes', async (req, res) => {
   }
 });
 
-// Obtener mensajes entre dos usuarios (solo texto, con paginación inicial)
+// ===================== MENSAJES (Archivos) =====================
+// 1. Obtener el siguiente número de mensaje (igual que texto).
+// 2. Insertar el mensaje (igual que texto, pero sin referencia de hilo).
+// 3. Insertar el contenido del archivo:
+//    INSERT INTO CONTENIDO (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, CONSECONTENIDO, IDTIPOARCHIVO, IDTIPOCONTENIDO, LOCALIZACONTENIDO)
+//    VALUES (:rem, :dest, :cons, 1, :tipoArchivo, '1', :ruta)
+//    - IDTIPOCONTENIDO = '1' indica que es archivo.
+//    - IDTIPOARCHIVO almacena el tipo de archivo (PDF, DOC, etc.).
+//    - LOCALIZACONTENIDO almacena la ruta del archivo en el servidor.
+// ---------------------------------------------------
+// Endpoint para subir archivo y registrar mensaje
+console.log("SUBIDA DE ARCHIVO ACTIVA");
+app.post('/api/mensajes/archivo', upload.single('archivo'), async (req, res) => {
+  const { remitente, destinatario } = req.body;
+  const file = req.file;
+  if (!file) return res.status(400).json({ error: 'No se recibió archivo' });
+  let connection;
+  try {
+    connection = await getConnection();
+    // Obtener el siguiente CONSMENSAJE
+    const result = await connection.execute(
+      `SELECT NVL(MAX(CONSMENSAJE),0)+1 AS NEXTMSG FROM MENSAJE WHERE USU_CONSECUSER = :rem AND CONSECUSER = :dest`,
+      { rem: remitente, dest: destinatario },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    const consMensaje = result.rows[0].NEXTMSG;
+    // Insertar en MENSAJE
+    await connection.execute(
+      `INSERT INTO MENSAJE (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, FECHAREGMEN) VALUES (:rem, :dest, :cons, SYSDATE)`,
+      { rem: remitente, dest: destinatario, cons: consMensaje },
+      { autoCommit: true }
+    );
+    // Determinar tipo de archivo
+    const ext = path.extname(file.originalname).toLowerCase();
+    let tipoArchivo = null;
+    switch (ext) {
+      case '.pdf': tipoArchivo = 'PDF'; break;
+      case '.doc': case '.docx': tipoArchivo = 'DOC'; break;
+      case '.xls': case '.xlsx': tipoArchivo = 'XLS'; break;
+      case '.gif': tipoArchivo = 'GIF'; break;
+      case '.bmp': tipoArchivo = 'BMP'; break;
+      case '.mp4': tipoArchivo = 'MP4'; break;
+      case '.avi': tipoArchivo = 'AVI'; break;
+      case '.mp3': tipoArchivo = 'MP3'; break;
+      case '.exe': tipoArchivo = 'EXE'; break;
+      default: tipoArchivo = 'OTR'; break;
+    }
+    // Insertar en CONTENIDO (solo ruta, no blob)
+    await connection.execute(
+      `INSERT INTO CONTENIDO (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, CONSECONTENIDO, IDTIPOARCHIVO, IDTIPOCONTENIDO, LOCALIZACONTENIDO) VALUES (:rem, :dest, :cons, 1, :tipoArchivo, '1', :ruta)`,
+      { rem: remitente, dest: destinatario, cons: consMensaje, tipoArchivo, ruta: file.path },
+      { autoCommit: true }
+    );
+    res.json({ success: true, message: 'Archivo enviado', ruta: file.path });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al enviar archivo' });
+  } finally {
+    if (connection) {
+      try { await connection.close(); } catch (err) { console.error('Error al cerrar la conexión:', err); }
+    }
+  }
+});
+
+// ===================== OBTENER MENSAJES =====================
+// Consulta para obtener mensajes entre dos usuarios (texto y archivos):
+// SELECT * FROM (
+//   SELECT m.USU_CONSECUSER, m.CONSECUSER, m.CONSMENSAJE, m.FECHAREGMEN, c.LOCALIZACONTENIDO, c.IDTIPOCONTENIDO, c.IDTIPOARCHIVO,
+//          m.MEN_USU_CONSECUSER, m.MEN_CONSECUSER, m.MEN_CONSMENSAJE,
+//          ROW_NUMBER() OVER (ORDER BY m.FECHAREGMEN DESC) AS RN
+//   FROM MENSAJE m
+//   JOIN CONTENIDO c ON m.USU_CONSECUSER = c.USU_CONSECUSER AND m.CONSECUSER = c.CONSECUSER AND m.CONSMENSAJE = c.CONSMENSAJE
+//   WHERE ((m.USU_CONSECUSER = :u1 AND m.CONSECUSER = :u2) OR (m.USU_CONSECUSER = :u2 AND m.CONSECUSER = :u1))
+//     AND (c.IDTIPOCONTENIDO = '1' OR c.IDTIPOCONTENIDO = '2')
+// ) WHERE RN BETWEEN :startRow AND :endRow
+// ORDER BY RN
+// Explicación:
+// Devuelve los mensajes (texto y archivos) entre dos usuarios, con paginación. Incluye información de si el mensaje es respuesta a otro (campos MEN_*).
+// ---------------------------------------------------
+// Endpoint para obtener mensajes entre dos usuarios (solo texto, con paginación inicial)
 app.get('/api/mensajes/:user1/:user2', async (req, res) => {
   const { user1, user2 } = req.params;
   const { offset } = req.query; // offset opcional para paginación
@@ -333,7 +457,7 @@ app.get('/api/mensajes/:user1/:user2', async (req, res) => {
     // Consulta: Obtener los mensajes entre dos usuarios (solo texto), con paginación
     // Estructura general:
     //   SELECT * FROM (
-    //     SELECT m.USU_CONSECUSER, m.CONSECUSER, m.CONSMENSAJE, m.FECHAREGMEN, c.LOCALIZACONTENIDO, c.IDTIPOCONTENIDO,
+    //     SELECT m.USU_CONSECUSER, m.CONSECUSER, m.CONSMENSAJE, m.FECHAREGMEN, c.LOCALIZACONTENIDO, c.IDTIPOCONTENIDO, c.IDTIPOARCHIVO,
     //            ROW_NUMBER() OVER (ORDER BY m.FECHAREGMEN DESC) AS RN
     //     FROM MENSAJE m
     //     JOIN CONTENIDO c ON m.USU_CONSECUSER = c.USU_CONSECUSER AND m.CONSECUSER = c.CONSECUSER AND m.CONSMENSAJE = c.CONSMENSAJE
@@ -348,12 +472,13 @@ app.get('/api/mensajes/:user1/:user2', async (req, res) => {
     // Propósito: Permitir la visualización paginada de los mensajes de texto entre dos usuarios.
     let query =
       `SELECT * FROM (
-         SELECT m.USU_CONSECUSER, m.CONSECUSER, m.CONSMENSAJE, m.FECHAREGMEN, c.LOCALIZACONTENIDO, c.IDTIPOCONTENIDO,
+         SELECT m.USU_CONSECUSER, m.CONSECUSER, m.CONSMENSAJE, m.FECHAREGMEN, c.LOCALIZACONTENIDO, c.IDTIPOCONTENIDO, c.IDTIPOARCHIVO,
+                m.MEN_USU_CONSECUSER, m.MEN_CONSECUSER, m.MEN_CONSMENSAJE,
                 ROW_NUMBER() OVER (ORDER BY m.FECHAREGMEN DESC) AS RN
          FROM MENSAJE m
          JOIN CONTENIDO c ON m.USU_CONSECUSER = c.USU_CONSECUSER AND m.CONSECUSER = c.CONSECUSER AND m.CONSMENSAJE = c.CONSMENSAJE
          WHERE ((m.USU_CONSECUSER = :u1 AND m.CONSECUSER = :u2) OR (m.USU_CONSECUSER = :u2 AND m.CONSECUSER = :u1))
-           AND c.IDTIPOCONTENIDO = '2'
+           AND (c.IDTIPOCONTENIDO = '1' OR c.IDTIPOCONTENIDO = '2')
        ) WHERE RN BETWEEN :startRow AND :endRow
        ORDER BY RN`;
     let startRow = 1;
@@ -369,6 +494,26 @@ app.get('/api/mensajes/:user1/:user2', async (req, res) => {
     );
     // Ordenar de más antiguo a más reciente
     const mensajes = result.rows.sort((a, b) => new Date(a.FECHAREGMEN) - new Date(b.FECHAREGMEN));
+    // Si algún mensaje es respuesta, buscar el mensaje original y adjuntarlo
+    for (const msg of mensajes) {
+      if (msg.MEN_USU_CONSECUSER && msg.MEN_CONSECUSER && msg.MEN_CONSMENSAJE) {
+        // Buscar el mensaje original en la misma lista (optimización para la mayoría de los casos)
+        const citado = mensajes.find(m => m.USU_CONSECUSER === msg.MEN_USU_CONSECUSER && m.CONSECUSER === msg.MEN_CONSECUSER && m.CONSMENSAJE === msg.MEN_CONSMENSAJE);
+        if (citado) {
+          msg.mensaje_citado = {
+            USU_CONSECUSER: citado.USU_CONSECUSER,
+            CONSECUSER: citado.CONSECUSER,
+            CONSMENSAJE: citado.CONSMENSAJE,
+            LOCALIZACONTENIDO: citado.LOCALIZACONTENIDO,
+            IDTIPOCONTENIDO: citado.IDTIPOCONTENIDO,
+            FECHAREGMEN: citado.FECHAREGMEN
+          };
+        } else {
+          // Si no está en la lista, opcional: podrías hacer una consulta extra a la BD
+          msg.mensaje_citado = null;
+        }
+      }
+    }
     res.json(mensajes);
   } catch (err) {
     console.error(err);
@@ -378,6 +523,18 @@ app.get('/api/mensajes/:user1/:user2', async (req, res) => {
       try { await connection.close(); } catch (err) { console.error('Error al cerrar la conexión:', err); }
     }
   }
+});
+
+// ===================== DESCARGA DE ARCHIVOS =====================
+// El endpoint usa la ruta almacenada en LOCALIZACONTENIDO para servir el archivo al usuario.
+// ---------------------------------------------------
+// Endpoint para servir archivos
+app.get('/api/descargar', (req, res) => {
+  const { ruta } = req.query;
+  if (!ruta) return res.status(400).json({ error: 'Ruta no especificada' });
+  res.download(ruta, err => {
+    if (err) res.status(404).json({ error: 'Archivo no encontrado' });
+  });
 });
 
 const PORT = process.env.PORT || 3001;

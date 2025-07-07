@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import './ChatWindow.css';
 import { getMensajes } from '../../services/api';
 
-const ChatWindow = ({ user, selectedChat, refreshTrigger }) => {
+const ChatWindow = ({ user, selectedChat, refreshTrigger, onReply }) => {
   const [mensajes, setMensajes] = useState([]);
   const [limit, setLimit] = useState(10);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -63,6 +63,11 @@ const ChatWindow = ({ user, selectedChat, refreshTrigger }) => {
     }
   };
 
+  // Permitir seleccionar un mensaje para responder
+  const handleReply = (msg) => {
+    if (onReply) onReply(msg);
+  };
+
   return (
     <div className="chat-window">
       {/* Header del chat */}
@@ -86,8 +91,30 @@ const ChatWindow = ({ user, selectedChat, refreshTrigger }) => {
                 <div
                   key={msg.USU_CONSECUSER + msg.CONSMENSAJE + idx}
                   className={`chat-message ${msg.USU_CONSECUSER === user.CONSECUSER ? 'sent' : 'received'}`}
+                  onDoubleClick={() => handleReply(msg)}
+                  title="Doble clic para responder"
                 >
-                  <div className="chat-message-text">{msg.LOCALIZACONTENIDO}</div>
+                  {/* Mostrar mensaje citado si existe */}
+                  {msg.mensaje_citado && (
+                    <div className="chat-message-quote">
+                      <span className="chat-message-quote-user">
+                        {msg.mensaje_citado.USU_CONSECUSER === user.CONSECUSER ? 'Tú' : (selectedChat && selectedChat.name ? selectedChat.name : 'Usuario')}
+                      </span>
+                      <span className="chat-message-quote-text">{msg.mensaje_citado.LOCALIZACONTENIDO}</span>
+                    </div>
+                  )}
+                  {msg.IDTIPOCONTENIDO === '1' && msg.LOCALIZACONTENIDO ? (
+                    <a
+                      href={`http://localhost:3001/api/descargar?ruta=${encodeURIComponent(msg.LOCALIZACONTENIDO)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="chat-message-file-link"
+                    >
+                      {msg.IDTIPOARCHIVO ? `${msg.IDTIPOARCHIVO} - ` : ''}{msg.LOCALIZACONTENIDO.split(/[/\\]/).pop()}
+                    </a>
+                  ) : (
+                    <div className="chat-message-text">{msg.LOCALIZACONTENIDO}</div>
+                  )}
                   <div className="chat-message-time">{msg.FECHAREGMEN ? new Date(msg.FECHAREGMEN).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
                 </div>
               ))}

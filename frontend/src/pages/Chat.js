@@ -7,21 +7,19 @@ import SidebarPanel from '../components/SidebarPanel/SidebarPanel';
 import '../App.css';
 
 const Chat = ({ user }) => {
-  // Estado para el chat/grupo seleccionado
   const [selectedChat, setSelectedChat] = useState(null);
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [refreshChats, setRefreshChats] = useState(false);
   const [refreshMessages, setRefreshMessages] = useState(0);
+  const [replyTo, setReplyTo] = useState(null);
 
-  // Función para refrescar la lista de amigos
   const handleFriendAdded = () => {
     setRefreshChats(r => !r);
   };
 
-  // Función para refrescar los mensajes y la lista de chats
   const handleMessageSent = () => {
     setRefreshMessages(r => r + 1);
-    setRefreshChats(r => !r); // Refresca la lista de chats para mostrar el último mensaje
+    setRefreshChats(r => !r);
   };
 
   return (
@@ -35,8 +33,8 @@ const Chat = ({ user }) => {
       </div>
       {/* Ventana de chat */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#ece5dd' }}>
-        <ChatWindow user={user} selectedChat={selectedChat} refreshTrigger={refreshMessages} />
-        <MessageInput user={user} selectedChat={selectedChat} onMessageSent={handleMessageSent} />
+        <ChatWindow user={user} selectedChat={selectedChat} refreshTrigger={refreshMessages} onReply={setReplyTo} />
+        <MessageInput user={user} selectedChat={selectedChat} onMessageSent={handleMessageSent} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
       </div>
     </div>
   );
