@@ -47,6 +47,9 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className="login-container">
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+        <img src={process.env.PUBLIC_URL + '/logochat.png'} alt="Logo Chat" style={{ width: 90, height: 90, borderRadius: 16, boxShadow: '0 2px 8px #1976d222' }} />
+      </div>
       {!showRegister ? (
         <>
           <h2>Iniciar Sesión</h2>

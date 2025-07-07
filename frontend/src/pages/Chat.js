@@ -32,7 +32,7 @@ const Chat = ({ user }) => {
   };
 
   return (
-    <div style={{ display: 'flex', height: '90vh', width: '90vw', background: '#f0f2f5', borderRadius: '18px', boxShadow: '0 4px 24px rgba(0,0,0,0.10)' }}>
+    <div style={{ display: 'flex', height: '90vh', width: '90vw', background: '#f0f2f5', borderRadius: '24px', boxShadow: '0 4px 24px rgba(0,0,0,0.10)', overflow: 'hidden' }}>
       {/* Panel lateral izquierdo: botón para agregar amigos */}
       <SidebarPanel onAddFriend={() => setShowAddFriend(true)} />
       {/* Sidebar de chats y perfil */}

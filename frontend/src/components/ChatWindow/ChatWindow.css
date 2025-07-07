@@ -3,7 +3,7 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background: #ece5dd;
+  background: #f5faff;
   overflow: hidden;
   position: relative;
 }
@@ -12,7 +12,7 @@
   display: flex;
   align-items: center;
   padding: 1rem;
-  background: #075e54;
+  background: #1565c0;
   color: #fff;
   border-top-left-radius: 18px;
   border-top-right-radius: 18px;
@@ -23,7 +23,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #bdbdbd;
+  background: #1976d2;
   color: #fff;
   display: flex;
   align-items: center;
@@ -60,8 +60,8 @@
 
 .chat-message.sent {
   align-self: flex-end;
-  background: #dcf8c6;
-  color: #222;
+  background: #e3f0fc !important;
+  color: #1565c0 !important;
 }
 
 .chat-message.received {
@@ -85,8 +85,8 @@
 
 .chat-window-more {
   background: #fff;
-  color: #075e54;
-  border: 1px solid #075e54;
+  color: #1565c0;
+  border: 1px solid #1565c0;
   border-radius: 8px;
   padding: 6px 16px;
   margin: 0 auto 10px auto;

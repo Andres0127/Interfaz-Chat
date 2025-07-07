@@ -1,8 +1,8 @@
 .sidebar-panel {
   width: 52px;
   min-width: 52px;
-  background: #f7f7f7;
-  border-right: 1px solid #e0e0e0;
+  background: #e3f0fc;
+  border-right: 1px solid #b3c6e0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -18,7 +18,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #075e54;
+  color: #1565c0;
   border-radius: 8px;
   padding: 4px;
   transition: background 0.15s;
@@ -26,7 +26,7 @@
   height: 32px;
 }
 .sidebar-btn:hover {
-  background: #e7f6ef;
+  background: #bbdefb;
 }
 .sidebar-btn svg {
   display: block;

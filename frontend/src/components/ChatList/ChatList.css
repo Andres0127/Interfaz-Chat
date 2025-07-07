@@ -9,19 +9,19 @@
   align-items: center;
   padding: 0.8rem 1.2rem;
   cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #e3f0fc;
   transition: background 0.2s;
 }
 
 .chat-list-item.selected, .chat-list-item:hover {
-  background: #e7f6ef;
+  background: #e3f0fc;
 }
 
 .chat-list-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #bdbdbd;
+  background: #1976d2;
   color: #fff;
   display: flex;
   align-items: center;
@@ -37,7 +37,7 @@
 
 .chat-list-name {
   font-weight: 600;
-  color: #075e54;
+  color: #1565c0;
   font-size: 15px;
 }
 

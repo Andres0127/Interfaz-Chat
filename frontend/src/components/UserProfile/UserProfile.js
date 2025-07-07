@@ -23,12 +23,13 @@ const UserProfile = ({ user, showAddFriend, setShowAddFriend, onFriendAdded }) =
 
   return (
     <div className="user-profile" style={{ padding: '1.2rem 1rem', borderBottom: '1px solid #e0e0e0', display: 'flex', alignItems: 'center', gap: '1rem', background: '#f7f7f7', position: 'relative' }}>
-      {/* Avatar y nombre del usuario */}
-      <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#bdbdbd', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff', fontSize: 22 }}>
+      {/* Logo y avatar del usuario */}
+      <img src={process.env.PUBLIC_URL + '/logochat.png'} alt="Logo Chat" style={{ width: 38, height: 38, borderRadius: 10, marginRight: 10, boxShadow: '0 2px 8px #1976d222' }} />
+      <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#1976d2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff', fontSize: 22 }}>
         {user?.NOMBRE?.[0] || user?.nombre?.[0] || 'U'}
       </div>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ fontWeight: 600, color: '#075e54', fontSize: 18 }}>{user?.NOMBRE || user?.nombre || 'Usuario'}</div>
+        <div style={{ fontWeight: 600, color: '#1565c0', fontSize: 18 }}>{user?.NOMBRE || user?.nombre || 'Usuario'}</div>
         <div style={{ fontSize: 13, color: '#888' }}>{fecha} {hora}</div>
       </div>
       {/* Popup para agregar amigo */}
@@ -41,7 +42,7 @@ const UserProfile = ({ user, showAddFriend, setShowAddFriend, onFriendAdded }) =
             onChange={e => setAmigoUser(e.target.value)}
             style={{ marginRight: 8, padding: 4, borderRadius: 4, border: '1px solid #ccc' }}
           />
-          <button onClick={handleAddAmigo} style={{ background: '#075e54', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 10px', fontWeight: 600 }}>Agregar</button>
+          <button onClick={handleAddAmigo} style={{ background: '#1565c0', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 10px', fontWeight: 600 }}>Agregar</button>
         </div>
       )}
       {/* Mensaje de éxito o error */}
