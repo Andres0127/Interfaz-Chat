@@ -1,47 +1,5 @@
 # Explicación detallada de las consultas e inserciones SQL en la aplicación de chat
 
-## Diagrama de relaciones principales
-
-```mermaid
-erDiagram
-    USUARIO ||--o{ AMIG_ : "es amigo de"
-    USUARIO ||--o{ MENSAJE : "envía/recibe"
-    MENSAJE ||--o{ CONTENIDO : "tiene"
-    MENSAJE ||--|{ MENSAJE : "cita (hilo)"
-
-    USUARIO {
-        VARCHAR2(36) CONSECUSER PK
-        VARCHAR2(25) NOMBRE
-        VARCHAR2(25) APELLIDO
-        VARCHAR2(6)  USER
-        VARCHAR2(8)  PASSWORD
-        VARCHAR2(50) EMAIL
-        VARCHAR2(16) CELULAR
-    }
-    AMIG_ {
-        VARCHAR2(36) CONSECUSER PK
-        VARCHAR2(36) USU_CONSECUSER PK
-    }
-    MENSAJE {
-        VARCHAR2(36) USU_CONSECUSER PK
-        VARCHAR2(36) CONSECUSER PK
-        INTEGER CONSMENSAJE PK
-        DATE FECHAREGMEN
-        VARCHAR2(36) MEN_USU_CONSECUSER (referencia a MENSAJE)
-        VARCHAR2(36) MEN_CONSECUSER (referencia a MENSAJE)
-        INTEGER MEN_CONSMENSAJE (referencia a MENSAJE)
-    }
-    CONTENIDO {
-        VARCHAR2(36) USU_CONSECUSER PK
-        VARCHAR2(36) CONSECUSER PK
-        INTEGER CONSMENSAJE PK
-        INTEGER CONSECONTENIDO PK
-        VARCHAR2(3) IDTIPOARCHIVO
-        VARCHAR2(2) IDTIPOCONTENIDO
-        VARCHAR2(255) LOCALIZACONTENIDO
-    }
-```
-
 ---
 
 ## Ejemplo de flujo de datos
@@ -56,21 +14,6 @@ erDiagram
 
 3. **Usuario responde a un mensaje:**
    - El nuevo mensaje en `MENSAJE` incluye los campos `MEN_USU_CONSECUSER`, `MEN_CONSECUSER`, `MEN_CONSMENSAJE` apuntando al mensaje original.
-
----
-
-## Leyenda visual
-- **PK**: Clave primaria
-- Las líneas indican relaciones (uno a muchos, muchos a muchos, autorreferencia para hilos)
-- Los campos `MEN_*` en `MENSAJE` permiten la funcionalidad de citar/responder mensajes (hilo)
-
----
-
-## ¿Cómo leer el diagrama?
-- Un usuario puede tener muchos amigos (`AMIG_`), y cada relación es bidireccional.
-- Un usuario puede enviar/recibir muchos mensajes (`MENSAJE`).
-- Cada mensaje puede tener varios contenidos (texto, archivo, etc.).
-- Un mensaje puede citar a otro mensaje (relación de hilo).
 
 ---
 
