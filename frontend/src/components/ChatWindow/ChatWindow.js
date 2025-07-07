@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './ChatWindow.css';
-import { getMensajes, getMensajesGrupo } from '../../services/api';
+import { getMensajes } from '../../services/api';
 
 const ChatWindow = ({ user, selectedChat, refreshTrigger }) => {
   const [mensajes, setMensajes] = useState([]);
@@ -16,11 +16,7 @@ const ChatWindow = ({ user, selectedChat, refreshTrigger }) => {
     let interval;
     const fetchMensajes = () => {
       if (user && selectedChat) {
-        if (selectedChat.tipo === 'grupo') {
-          getMensajesGrupo(selectedChat.CODGRUPO, limit).then(setMensajes);
-        } else {
-          getMensajes(user.CONSECUSER, selectedChat.id, limit).then(setMensajes);
-        }
+        getMensajes(user.CONSECUSER, selectedChat.id, limit).then(setMensajes);
       } else {
         setMensajes([]);
       }
@@ -91,13 +87,6 @@ const ChatWindow = ({ user, selectedChat, refreshTrigger }) => {
                   key={msg.USU_CONSECUSER + msg.CONSMENSAJE + idx}
                   className={`chat-message ${msg.USU_CONSECUSER === user.CONSECUSER ? 'sent' : 'received'}`}
                 >
-                  {selectedChat.tipo === 'grupo' && (
-                    <div className="chat-message-sender" style={{ fontSize: 12, color: '#128c7e', fontWeight: 600, marginBottom: 2 }}>
-                      {msg.USU_CONSECUSER === user.CONSECUSER
-                        ? 'Tú'
-                        : (msg.REMITENTE_NOMBRE ? msg.REMITENTE_NOMBRE + (msg.REMITENTE_APELLIDO ? ' ' + msg.REMITENTE_APELLIDO : '') : '')}
-                    </div>
-                  )}
                   <div className="chat-message-text">{msg.LOCALIZACONTENIDO}</div>
                   <div className="chat-message-time">{msg.FECHAREGMEN ? new Date(msg.FECHAREGMEN).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
                 </div>
