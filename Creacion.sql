@@ -1,6 +1,6 @@
 /*==============================================================*/
 /* DBMS name:      ORACLE Version 11g                           */
-/* Created on:     4/07/2025 7:14:10�p.�m.                      */
+/* Created on:     5/07/2025 6:32:35?p.?m.                      */
 /*==============================================================*/
 
 
@@ -64,17 +64,8 @@ alter table SEDUIR
 alter table SEDUIR
    drop constraint FK_SEDUIR_SEDUIR2_USUARIO;
 
-alter table UBICACION
-   drop constraint FK_UBICACIO_TIPOUBICA_TIPOUBIC;
-
-alter table UBICACION
-   drop constraint FK_UBICACIO_UBICASUP_UBICACIO;
-
 alter table USUARIO
    drop constraint FK_USUARIO_ACTUALIZA_USUARIO;
-
-alter table USUARIO
-   drop constraint FK_USUARIO_UBICA_UBICACIO;
 
 drop index AMIG_2_FK;
 
@@ -138,16 +129,6 @@ drop table TIPOARCHIVO cascade constraints;
 
 drop table TIPOCONTENIDO cascade constraints;
 
-drop table TIPOUBICA cascade constraints;
-
-drop index UBICASUP_FK;
-
-drop index TIPOUBICA_FK;
-
-drop table UBICACION cascade constraints;
-
-drop index UBICA_FK;
-
 drop index ACTUALIZAPERFIL_FK;
 
 drop table USUARIO cascade constraints;
@@ -157,8 +138,8 @@ drop table USUARIO cascade constraints;
 /*==============================================================*/
 create table AMIG_ 
 (
-   CONSECUSER           VARCHAR2(5)          not null,
-   USU_CONSECUSER       VARCHAR2(5)          not null,
+   CONSECUSER           VARCHAR2(36)          not null,
+   USU_CONSECUSER       VARCHAR2(36)          not null,
    constraint PK_AMIG_ primary key (CONSECUSER, USU_CONSECUSER)
 );
 
@@ -207,7 +188,7 @@ create index GRUPO_FK on CONFGRUPO (
 /*==============================================================*/
 create table CONFUSER 
 (
-   CONSECUSER           VARCHAR2(5)          not null,
+   CONSECUSER           VARCHAR2(36)          not null,
    NCONFUSER            INTEGER              not null,
    IDPROPIEDAD          VARCHAR2(2)          not null,
    ESTADO               SMALLINT,
@@ -234,11 +215,11 @@ create index PROPIAUSER_FK on CONFUSER (
 /*==============================================================*/
 create table CONTENIDO 
 (
-   USU_CONSECUSER       VARCHAR2(5)          not null,
-   CONSECUSER           VARCHAR2(5)          not null,
+   USU_CONSECUSER       VARCHAR2(36)          not null,
+   CONSECUSER           VARCHAR2(36)          not null,
    CONSMENSAJE          INTEGER              not null,
    CONSECONTENIDO       INTEGER              not null,
-   IDTIPOARCHIVO        VARCHAR2(2),
+   IDTIPOARCHIVO        VARCHAR2(3),
    IDTIPOCONTENIDO      VARCHAR2(2)          not null,
    CONTENIDOIMAG        BLOB,
    LOCALIZACONTENIDO    VARCHAR2(255),
@@ -275,7 +256,7 @@ create index MENSAJE_FK on CONTENIDO (
 create table GRUPO 
 (
    CODGRUPO             INTEGER              not null,
-   CONSECUSER           VARCHAR2(5)          not null,
+   CONSECUSER           VARCHAR2(36)          not null,
    GRU_CODGRUPO         INTEGER,
    NOMGRUPO             VARCHAR2(30),
    FECHAREGGRUPO        DATE,
@@ -301,12 +282,12 @@ create index MODIFICAGRUPO_FK on GRUPO (
 /*==============================================================*/
 create table MENSAJE 
 (
-   USU_CONSECUSER       VARCHAR2(5)          not null,
-   CONSECUSER           VARCHAR2(5)          not null,
+   USU_CONSECUSER       VARCHAR2(36)          not null,
+   CONSECUSER           VARCHAR2(36)          not null,
    CONSMENSAJE          INTEGER              not null,
    CODGRUPO             INTEGER,
-   MEN_USU_CONSECUSER   VARCHAR2(5),
-   MEN_CONSECUSER       VARCHAR2(5),
+   MEN_USU_CONSECUSER   VARCHAR2(36),
+   MEN_CONSECUSER       VARCHAR2(36),
    MEN_CONSMENSAJE      INTEGER,
    FECHAREGMEN          DATE,
    constraint PK_MENSAJE primary key (USU_CONSECUSER, CONSECUSER, CONSMENSAJE)
@@ -347,7 +328,7 @@ create index HILO_FK on MENSAJE (
 /*==============================================================*/
 create table PERTENECE 
 (
-   CONSECUSER           VARCHAR2(5)          not null,
+   CONSECUSER           VARCHAR2(36)          not null,
    CODGRUPO             INTEGER              not null,
    constraint PK_PERTENECE primary key (CONSECUSER, CODGRUPO)
 );
@@ -415,7 +396,7 @@ create index SEDUIR2_FK on SEDUIR (
 /*==============================================================*/
 create table TIPOARCHIVO 
 (
-   IDTIPOARCHIVO        VARCHAR2(2)          not null,
+   IDTIPOARCHIVO        VARCHAR2(3)          not null,
    DESCTIPOARCHIVO      VARCHAR2(30),
    constraint PK_TIPOARCHIVO primary key (IDTIPOARCHIVO)
 );
@@ -431,52 +412,16 @@ create table TIPOCONTENIDO
 );
 
 /*==============================================================*/
-/* Table: TIPOUBICA                                             */
-/*==============================================================*/
-create table TIPOUBICA 
-(
-   CODTIPOUBICA         VARCHAR2(3)          not null,
-   DESCTIPOUBICA        VARCHAR2(20),
-   constraint PK_TIPOUBICA primary key (CODTIPOUBICA)
-);
-
-/*==============================================================*/
-/* Table: UBICACION                                             */
-/*==============================================================*/
-create table UBICACION 
-(
-   CODUBICA             VARCHAR2(4)          not null,
-   UBI_CODUBICA         VARCHAR2(4),
-   CODTIPOUBICA         VARCHAR2(3)          not null,
-   NOMUBICA             VARCHAR2(30),
-   constraint PK_UBICACION primary key (CODUBICA)
-);
-
-/*==============================================================*/
-/* Index: TIPOUBICA_FK                                          */
-/*==============================================================*/
-create index TIPOUBICA_FK on UBICACION (
-   CODTIPOUBICA ASC
-);
-
-/*==============================================================*/
-/* Index: UBICASUP_FK                                           */
-/*==============================================================*/
-create index UBICASUP_FK on UBICACION (
-   UBI_CODUBICA ASC
-);
-
-/*==============================================================*/
 /* Table: USUARIO                                               */
 /*==============================================================*/
 create table USUARIO 
 (
-   CONSECUSER           VARCHAR2(5)          not null,
+   CONSECUSER           VARCHAR2(36)          not null,
    USU_CONSECUSER       VARCHAR2(5),
-   CODUBICA             VARCHAR2(4)          not null,
    NOMBRE               VARCHAR2(25),
    APELLIDO             VARCHAR2(25),
    "USER"               VARCHAR2(6),
+   PASSWORD             VARCHAR2(8)          not null,
    FECHAREGISTRO        DATE,
    EMAIL                VARCHAR2(50),
    CELULAR              VARCHAR2(16),
@@ -488,13 +433,6 @@ create table USUARIO
 /*==============================================================*/
 create index ACTUALIZAPERFIL_FK on USUARIO (
    USU_CONSECUSER ASC
-);
-
-/*==============================================================*/
-/* Index: UBICA_FK                                              */
-/*==============================================================*/
-create index UBICA_FK on USUARIO (
-   CODUBICA ASC
 );
 
 alter table AMIG_
@@ -577,19 +515,113 @@ alter table SEDUIR
    add constraint FK_SEDUIR_SEDUIR2_USUARIO foreign key (USU_CONSECUSER)
       references USUARIO (CONSECUSER);
 
-alter table UBICACION
-   add constraint FK_UBICACIO_TIPOUBICA_TIPOUBIC foreign key (CODTIPOUBICA)
-      references TIPOUBICA (CODTIPOUBICA);
-
-alter table UBICACION
-   add constraint FK_UBICACIO_UBICASUP_UBICACIO foreign key (UBI_CODUBICA)
-      references UBICACION (CODUBICA);
-
 alter table USUARIO
    add constraint FK_USUARIO_ACTUALIZA_USUARIO foreign key (USU_CONSECUSER)
       references USUARIO (CONSECUSER);
 
-alter table USUARIO
-   add constraint FK_USUARIO_UBICA_UBICACIO foreign key (CODUBICA)
-      references UBICACION (CODUBICA);
+
+-- MIGRACIÓN: Ajustar la tabla AMIG_ para soportar UUIDs (VARCHAR2(36))
+
+-- 1. Eliminar restricciones y tabla actual (si existe)
+ALTER TABLE AMIG_ DROP CONSTRAINT FK_AMIG__AMIG__USUARIO;
+ALTER TABLE AMIG_ DROP CONSTRAINT FK_AMIG__AMIG_2_USUARIO;
+DROP INDEX AMIG__FK;
+DROP INDEX AMIG_2_FK;
+DROP TABLE AMIG_ CASCADE CONSTRAINTS;
+
+-- 2. Crear la tabla AMIG_ con campos VARCHAR2(36)
+CREATE TABLE AMIG_ (
+   CONSECUSER      VARCHAR2(36) NOT NULL,
+   USU_CONSECUSER  VARCHAR2(36) NOT NULL,
+   CONSTRAINT PK_AMIG_ PRIMARY KEY (CONSECUSER, USU_CONSECUSER)
+);
+
+-- 3. Crear índices
+CREATE INDEX AMIG__FK ON AMIG_ (CONSECUSER ASC);
+CREATE INDEX AMIG_2_FK ON AMIG_ (USU_CONSECUSER ASC);
+
+-- 4. Restaurar claves foráneas
+ALTER TABLE AMIG_ ADD CONSTRAINT FK_AMIG__AMIG__USUARIO FOREIGN KEY (CONSECUSER)
+   REFERENCES USUARIO (CONSECUSER);
+ALTER TABLE AMIG_ ADD CONSTRAINT FK_AMIG__AMIG_2_USUARIO FOREIGN KEY (USU_CONSECUSER)
+   REFERENCES USUARIO (CONSECUSER);
+
+-- ¡Listo! Ahora AMIG_ soporta UUIDs y funcionará con los usuarios actuales.
+-- Si tienes datos antiguos que migrar, deberás convertir los IDs antiguos a UUIDs válidos o recrear las relaciones de amistad.
+-- Repite el proceso para otras tablas de rompimiento si es necesario.
+
+-- MIGRACIÓN: Ajustar tablas MENSAJE y CONTENIDO para soportar UUIDs (VARCHAR2(36))
+
+-- 1. Eliminar restricciones y tablas actuales (si existen)
+ALTER TABLE CONTENIDO DROP CONSTRAINT FK_CONTENID_MENSAJE_MENSAJE;
+ALTER TABLE CONTENIDO DROP CONSTRAINT FK_CONTENID_TIPOARCHI_TIPOARCH;
+ALTER TABLE CONTENIDO DROP CONSTRAINT FK_CONTENID_TIPOCONTE_TIPOCONT;
+DROP INDEX MENSAJE_FK;
+DROP INDEX TIPOARCHIVO_FK;
+DROP INDEX TIPOCONTE_FK;
+DROP TABLE CONTENIDO CASCADE CONSTRAINTS;
+
+ALTER TABLE MENSAJE DROP CONSTRAINT FK_MENSAJE_ENVIA_USUARIO;
+ALTER TABLE MENSAJE DROP CONSTRAINT FK_MENSAJE_GRUPOMENS_GRUPO;
+ALTER TABLE MENSAJE DROP CONSTRAINT FK_MENSAJE_HILO_MENSAJE;
+ALTER TABLE MENSAJE DROP CONSTRAINT FK_MENSAJE_RECIBE_USUARIO;
+DROP INDEX HILO_FK;
+DROP INDEX GRUPOMENSAJE_FK;
+DROP INDEX RECIBE_FK;
+DROP INDEX ENVIA_FK;
+DROP TABLE MENSAJE CASCADE CONSTRAINTS;
+
+-- 2. Crear tabla MENSAJE con campos UUID
+CREATE TABLE MENSAJE (
+   USU_CONSECUSER      VARCHAR2(36) NOT NULL,
+   CONSECUSER          VARCHAR2(36) NOT NULL,
+   CONSMENSAJE         INTEGER      NOT NULL,
+   CODGRUPO            INTEGER,
+   MEN_USU_CONSECUSER  VARCHAR2(36),
+   MEN_CONSECUSER      VARCHAR2(36),
+   MEN_CONSMENSAJE     INTEGER,
+   FECHAREGMEN         DATE,
+   CONSTRAINT PK_MENSAJE PRIMARY KEY (USU_CONSECUSER, CONSECUSER, CONSMENSAJE)
+);
+
+CREATE INDEX ENVIA_FK ON MENSAJE (USU_CONSECUSER ASC);
+CREATE INDEX RECIBE_FK ON MENSAJE (CONSECUSER ASC);
+CREATE INDEX GRUPOMENSAJE_FK ON MENSAJE (CODGRUPO ASC);
+CREATE INDEX HILO_FK ON MENSAJE (MEN_USU_CONSECUSER ASC, MEN_CONSECUSER ASC, MEN_CONSMENSAJE ASC);
+
+-- 3. Crear tabla CONTENIDO con campos UUID
+CREATE TABLE CONTENIDO (
+   USU_CONSECUSER      VARCHAR2(36) NOT NULL,
+   CONSECUSER          VARCHAR2(36) NOT NULL,
+   CONSMENSAJE         INTEGER      NOT NULL,
+   CONSECONTENIDO      INTEGER      NOT NULL,
+   IDTIPOARCHIVO       VARCHAR2(3),
+   IDTIPOCONTENIDO     VARCHAR2(2)  NOT NULL,
+   CONTENIDOIMAG       BLOB,
+   LOCALIZACONTENIDO   VARCHAR2(255),
+   ATTRIBUTE_16        CHAR(10),
+   CONSTRAINT PK_CONTENIDO PRIMARY KEY (USU_CONSECUSER, CONSECUSER, CONSMENSAJE, CONSECONTENIDO)
+);
+
+CREATE INDEX MENSAJE_FK ON CONTENIDO (USU_CONSECUSER ASC, CONSECUSER ASC, CONSMENSAJE ASC);
+CREATE INDEX TIPOARCHIVO_FK ON CONTENIDO (IDTIPOARCHIVO ASC);
+CREATE INDEX TIPOCONTE_FK ON CONTENIDO (IDTIPOCONTENIDO ASC);
+
+-- 4. Restaurar claves foráneas
+ALTER TABLE CONTENIDO ADD CONSTRAINT FK_CONTENID_MENSAJE_MENSAJE FOREIGN KEY (USU_CONSECUSER, CONSECUSER, CONSMENSAJE)
+   REFERENCES MENSAJE (USU_CONSECUSER, CONSECUSER, CONSMENSAJE);
+ALTER TABLE CONTENIDO ADD CONSTRAINT FK_CONTENID_TIPOARCHI_TIPOARCH FOREIGN KEY (IDTIPOARCHIVO)
+   REFERENCES TIPOARCHIVO (IDTIPOARCHIVO);
+ALTER TABLE CONTENIDO ADD CONSTRAINT FK_CONTENID_TIPOCONTE_TIPOCONT FOREIGN KEY (IDTIPOCONTENIDO)
+   REFERENCES TIPOCONTENIDO (IDTIPOCONTENIDO);
+ALTER TABLE MENSAJE ADD CONSTRAINT FK_MENSAJE_ENVIA_USUARIO FOREIGN KEY (USU_CONSECUSER)
+   REFERENCES USUARIO (CONSECUSER);
+ALTER TABLE MENSAJE ADD CONSTRAINT FK_MENSAJE_RECIBE_USUARIO FOREIGN KEY (CONSECUSER)
+   REFERENCES USUARIO (CONSECUSER);
+ALTER TABLE MENSAJE ADD CONSTRAINT FK_MENSAJE_GRUPOMENS_GRUPO FOREIGN KEY (CODGRUPO)
+   REFERENCES GRUPO (CODGRUPO);
+ALTER TABLE MENSAJE ADD CONSTRAINT FK_MENSAJE_HILO_MENSAJE FOREIGN KEY (MEN_USU_CONSECUSER, MEN_CONSECUSER, MEN_CONSMENSAJE)
+   REFERENCES MENSAJE (USU_CONSECUSER, CONSECUSER, CONSMENSAJE);
+
+-- ¡Listo! Ahora MENSAJE y CONTENIDO soportan UUIDs y funcionarán con los usuarios actuales.
 
