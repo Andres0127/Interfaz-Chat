@@ -1,4 +1,6 @@
-// Función para login de usuario
+// Funciones de acceso a la API del backend para todas las operaciones principales
+
+// Login de usuario
 export const login = async (user, password) => {
   try {
     const response = await fetch('http://localhost:3001/api/login', {
@@ -13,7 +15,7 @@ export const login = async (user, password) => {
   }
 };
 
-// Función para registrar usuario (sin codubica)
+// Registro de usuario
 export const register = async (data) => {
   try {
     const response = await fetch('http://localhost:3001/api/register', {
@@ -27,7 +29,7 @@ export const register = async (data) => {
   }
 };
 
-// Función para obtener ubicaciones
+// Obtener ubicaciones (no usado en la app principal)
 export const getUbicaciones = async () => {
   try {
     const response = await fetch('http://localhost:3001/api/ubicaciones');
@@ -48,7 +50,7 @@ export const getAmigos = async (consecuser) => {
   }
 };
 
-// Función para agregar un amigo
+// Agregar un amigo por nombre de usuario
 export const addAmigo = async (consecuser, amigoUser) => {
   try {
     const response = await fetch('http://localhost:3001/api/amigos', {
@@ -62,7 +64,7 @@ export const addAmigo = async (consecuser, amigoUser) => {
   }
 };
 
-// Enviar mensaje entre usuarios
+// Enviar mensaje de texto (y cita si corresponde)
 export const sendMensaje = async ({ remitente, destinatario, texto, men_usu_consecuser, men_consecuser, men_consMensaje }) => {
   try {
     const response = await fetch('http://localhost:3001/api/mensajes', {

@@ -221,11 +221,11 @@ app.get('/api/amigos/:consecuser', async (req, res) => {
           (
             SELECT m.USU_CONSECUSER FROM MENSAJE m
             WHERE ((m.USU_CONSECUSER = :id AND m.CONSECUSER = u.CONSECUSER)
-                OR (m.USU_CONSECUSER = u.CONSECUSER && m.CONSECUSER = :id))
+                OR (m.USU_CONSECUSER = u.CONSECUSER AND m.CONSECUSER = :id))
               AND m.FECHAREGMEN = (
                 SELECT MAX(m2.FECHAREGMEN) FROM MENSAJE m2
                 WHERE ((m2.USU_CONSECUSER = :id AND m2.CONSECUSER = u.CONSECUSER)
-                   OR (m2.USU_CONSECUSER = u.CONSECUSER && m2.CONSECUSER = :id))
+                   OR (m2.USU_CONSECUSER = u.CONSECUSER AND m2.CONSECUSER = :id))
               )
           ) AS ULTIMO_REMITENTE
         FROM AMIG_ a

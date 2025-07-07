@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './ChatList.css';
 import { getAmigos } from '../../services/api';
 
+// Componente que muestra la lista de amigos/chats
 const ChatList = ({ user, onSelectChat, selectedChat, refresh }) => {
   const [amigos, setAmigos] = useState([]);
 
@@ -22,6 +23,7 @@ const ChatList = ({ user, onSelectChat, selectedChat, refresh }) => {
     <div className="chat-list">
       <div style={{ fontWeight: 600, color: '#075e54', fontSize: 16, padding: '1rem 1.2rem 0.5rem' }}>Chats</div>
       <div>
+        {/* Si no hay amigos, muestra mensaje. Si hay, muestra la lista */}
         {amigos.length === 0 ? (
           <div style={{ color: '#888', padding: '1rem' }}>No tienes amigos aún.</div>
         ) : (
@@ -31,9 +33,11 @@ const ChatList = ({ user, onSelectChat, selectedChat, refresh }) => {
               className={`chat-list-item${selectedChat && selectedChat.id === chat.CONSECUSER ? ' selected' : ''}`}
               onClick={() => onSelectChat({ id: chat.CONSECUSER, name: chat.NOMBRE + (chat.APELLIDO ? ' ' + chat.APELLIDO : '') })}
             >
+              {/* Avatar y nombre del amigo */}
               <div className="chat-list-avatar">{chat.NOMBRE[0]}</div>
               <div className="chat-list-info">
                 <div className="chat-list-name">{chat.NOMBRE} {chat.APELLIDO}</div>
+                {/* Muestra el último mensaje enviado/recibido */}
                 <div className="chat-list-preview" style={{ color: '#bbb', fontSize: 13, marginTop: 2 }}>
                   {chat.ULTIMO_TEXTO ? (
                     <>
@@ -47,6 +51,7 @@ const ChatList = ({ user, onSelectChat, selectedChat, refresh }) => {
                   )}
                 </div>
               </div>
+              {/* Hora del último mensaje */}
               <div className="chat-list-time">
                 {chat.ULTIMO_MENSAJE ? (
                   <span style={{ color: '#888', fontSize: 12 }}>

@@ -1,9 +1,11 @@
 import React from 'react';
 import './SidebarPanel.css';
 
+// Panel lateral con botón para agregar amigos
 const SidebarPanel = ({ onAddFriend }) => {
   return (
     <div className="sidebar-panel">
+      {/* Botón para abrir el popup de agregar amigo */}
       <button className="sidebar-btn" title="Agregar amigo" onClick={onAddFriend}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#075e54" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="8" r="4"/>
