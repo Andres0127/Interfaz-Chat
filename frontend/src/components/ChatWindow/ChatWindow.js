@@ -17,7 +17,8 @@ const ChatWindow = ({ user, selectedChat, refreshTrigger }) => {
     const fetchMensajes = () => {
       if (user && selectedChat) {
         if (selectedChat.tipo === 'grupo') {
-          getMensajesGrupo(selectedChat.CODGRUPO, limit).then(setMensajes);
+          // Adaptar a la nueva API: offset y limit, y pasar el usuario
+          getMensajesGrupo(selectedChat.CODGRUPO, limit, 0, user.CONSECUSER).then(setMensajes);
         } else {
           getMensajes(user.CONSECUSER, selectedChat.id, limit).then(setMensajes);
         }
@@ -88,18 +89,18 @@ const ChatWindow = ({ user, selectedChat, refreshTrigger }) => {
               )}
               {mensajes.map((msg, idx) => (
                 <div
-                  key={msg.USU_CONSECUSER + msg.CONSMENSAJE + idx}
+                  key={msg.USU_CONSECUSER + (msg.CONSMENSAJE || idx)}
                   className={`chat-message ${msg.USU_CONSECUSER === user.CONSECUSER ? 'sent' : 'received'}`}
                 >
                   {selectedChat.tipo === 'grupo' && (
                     <div className="chat-message-sender" style={{ fontSize: 12, color: '#128c7e', fontWeight: 600, marginBottom: 2 }}>
                       {msg.USU_CONSECUSER === user.CONSECUSER
                         ? 'Tú'
-                        : (msg.REMITENTE_NOMBRE ? msg.REMITENTE_NOMBRE + (msg.REMITENTE_APELLIDO ? ' ' + msg.REMITENTE_APELLIDO : '') : '')}
+                        : (msg.remitente_nombre ? msg.remitente_nombre + (msg.remitente_apellido ? ' ' + msg.remitente_apellido : '') : '')}
                     </div>
                   )}
-                  <div className="chat-message-text">{msg.LOCALIZACONTENIDO}</div>
-                  <div className="chat-message-time">{msg.FECHAREGMEN ? new Date(msg.FECHAREGMEN).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                  <div className="chat-message-text">{msg.texto || msg.LOCALIZACONTENIDO}</div>
+                  <div className="chat-message-time">{msg.fecha ? new Date(msg.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (msg.FECHAREGMEN ? new Date(msg.FECHAREGMEN).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')}</div>
                 </div>
               ))}
             </>

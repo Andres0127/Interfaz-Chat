@@ -5,6 +5,7 @@ import ChatWindow from '../components/ChatWindow/ChatWindow';
 import MessageInput from '../components/MessageInput/MessageInput';
 import SidebarPanel from '../components/SidebarPanel/SidebarPanel';
 import CreateGroupModal from '../components/CreateGroupModal';
+import GroupChat from './GroupChat';
 import { getAmigos, crearGrupo } from '../services/api';
 import '../App.css';
 
@@ -16,6 +17,7 @@ const Chat = ({ user }) => {
   const [refreshMessages, setRefreshMessages] = useState(0);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [friends, setFriends] = useState([]);
+  const [groupParticipants, setGroupParticipants] = useState([]);
 
   useEffect(() => {
     if (user) {
@@ -53,6 +55,9 @@ const Chat = ({ user }) => {
     setRefreshChats(r => !r); // Refresca la lista de chats para mostrar el grupo
   };
 
+  // Si el chat seleccionado es grupo, renderiza GroupChat
+  const isGroup = selectedChat && selectedChat.tipo === 'grupo';
+
   return (
     <div style={{ display: 'flex', height: '90vh', width: '90vw', background: '#f0f2f5', borderRadius: '18px', boxShadow: '0 4px 24px rgba(0,0,0,0.10)' }}>
       {/* Panel lateral izquierdo */}
@@ -64,8 +69,19 @@ const Chat = ({ user }) => {
       </div>
       {/* Ventana de chat */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#ece5dd' }}>
-        <ChatWindow user={user} selectedChat={selectedChat} refreshTrigger={refreshMessages} />
-        <MessageInput user={user} selectedChat={selectedChat} onMessageSent={handleMessageSent} />
+        {isGroup ? (
+          <GroupChat
+            user={user}
+            groupId={selectedChat.CODGRUPO}
+            groupName={selectedChat.NOMGRUPO || selectedChat.name}
+            participants={groupParticipants}
+          />
+        ) : (
+          <>
+            <ChatWindow user={user} selectedChat={selectedChat} refreshTrigger={refreshMessages} />
+            <MessageInput user={user} selectedChat={selectedChat} onMessageSent={handleMessageSent} />
+          </>
+        )}
       </div>
       <CreateGroupModal
         friends={friends}
